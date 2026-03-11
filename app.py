@@ -3,74 +3,74 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
-from tensorflow.keras.datasets import fashion_mnist
 
+st.title("Clasificación de prendas - Fashion MNIST")
+st.write("Red neuronal MLP / DNN usando sklearn")
 
-st.title("Clasificación de Prendas - Fashion MNIST")
-st.write("Redes neuronales MLP / DNN usando sklearn")
-
-# =============================
+# =========================
 # Cargar dataset
-# =============================
+# =========================
 
 @st.cache_data
 def load_data():
 
-    (X_train, y_train), (X_test, y_test) = fashion_mnist.load_data()
-
-    # convertir 28x28 → 784
-    X_train = X_train.reshape(-1,784)
-    X_test = X_test.reshape(-1,784)
+    X, y = fetch_openml("Fashion-MNIST", version=1, return_X_y=True, as_frame=False)
 
     # normalizar
-    X_train = X_train / 255.0
-    X_test = X_test / 255.0
+    X = X / 255.0
+    y = y.astype(int)
 
-    # reducir tamaño para que Streamlit no se caiga
-    X_train = X_train[:8000]
-    y_train = y_train[:8000]
+    # usar menos datos para que Streamlit no se caiga
+    X = X[:10000]
+    y = y[:10000]
 
-    X_test = X_test[:2000]
-    y_test = y_test[:2000]
-
-    return X_train, X_test, y_train, y_test
+    return X, y
 
 
-X_train, X_test, y_train, y_test = load_data()
+X, y = load_data()
 
-# =============================
+# =========================
 # Mostrar ejemplos
-# =============================
+# =========================
 
 st.subheader("Ejemplos del dataset")
 
 fig, axes = plt.subplots(1,5, figsize=(10,3))
 
 for i in range(5):
-    axes[i].imshow(X_train[i].reshape(28,28), cmap="gray")
+    axes[i].imshow(X[i].reshape(28,28), cmap="gray")
     axes[i].axis("off")
 
 st.pyplot(fig)
 
-# =============================
-# Escalar datos
-# =============================
+# =========================
+# División de datos
+# =========================
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# =========================
+# Escalado
+# =========================
 
 scaler = StandardScaler()
 
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-# =============================
-# Configuración de la red
-# =============================
+# =========================
+# Configuración red
+# =========================
 
-st.sidebar.header("Configuración de la Red")
+st.sidebar.header("Configuración de la red")
 
 activation = st.sidebar.selectbox(
     "Función de activación",
@@ -101,9 +101,9 @@ hidden_layers = tuple(neurons)
 
 st.write("Arquitectura seleccionada:", hidden_layers)
 
-# =============================
-# Entrenar red
-# =============================
+# =========================
+# Entrenar modelo
+# =========================
 
 if st.button("Entrenar red neuronal"):
 
@@ -122,27 +122,27 @@ if st.button("Entrenar red neuronal"):
 
     y_pred = model.predict(X_test)
 
-    # =============================
+    # =========================
     # Métricas
-    # =============================
+    # =========================
 
     acc = accuracy_score(y_test, y_pred)
     prec = precision_score(y_test, y_pred, average="macro")
     rec = recall_score(y_test, y_pred, average="macro")
     f1 = f1_score(y_test, y_pred, average="macro")
 
-    st.subheader("Resultados")
+    st.subheader("Resultados del modelo")
 
     st.write("Accuracy:", acc)
     st.write("Precision:", prec)
     st.write("Recall:", rec)
     st.write("F1 Score:", f1)
 
-    # =============================
+    # =========================
     # Matriz de confusión
-    # =============================
+    # =========================
 
-    st.subheader("Matriz de Confusión")
+    st.subheader("Matriz de confusión")
 
     cm = confusion_matrix(y_test, y_pred)
 
